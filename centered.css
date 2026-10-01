@@ -1,4 +1,6 @@
 /* Centered composition and continuous scroll entrances. */
+html,body{background:#0b0d0c}
+body{background:linear-gradient(180deg,#0b0d0c 0%,#101813 30%,#101813 70%,#0b0d0c 100%) fixed}
 footer img{width:135px;height:auto}
 .project-title .eyebrow{font-size:14.4px}
 .project-title h3{font-size:62.4px}
@@ -20,6 +22,25 @@ body{text-align:center}
 .word-slot{border-bottom:0;display:inline-block;width:10.7em;min-width:10.7em;margin:0 auto .18em;text-align:center}
 .cta h2{font-size:clamp(30px,3.8vw,58px)}
 .cta h2 span{color:var(--accent)}
+.background,.trust,.cta,main>.section{background:transparent!important}
+.experience-summary{background:transparent!important}
+.background-intro{max-width:900px;margin:0 auto 70px}
+.background-intro h2{font-size:clamp(34px,4.4vw,68px);margin-bottom:24px}
+.background-intro p{color:#adb9af;font-size:16px}
+.background-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;max-width:1000px;margin:0 auto 70px}
+.background-card{border:1px solid #ffffff22;padding:34px;text-align:left;background:linear-gradient(145deg,#ffffff0b,#18382433)}
+.background-card>span{display:block;color:var(--accent);margin-bottom:36px}
+.background-card strong{display:block;font-size:clamp(24px,2.6vw,42px);line-height:1.45;font-weight:500;letter-spacing:-.06em}
+.background-card>b{display:block;color:#c5d2c8;font-size:13px;font-weight:500;margin:12px 0 20px;letter-spacing:.02em}
+.background-card p{color:#9eaa9f;font-size:14px}
+.profile-card{display:grid;grid-template-columns:250px 1fr;gap:40px;align-items:center;max-width:1000px;margin:0 auto;border-top:1px solid #ffffff22;padding-top:45px;text-align:left}
+.profile-photo{aspect-ratio:1;background:#1d2b21;border:1px solid #5a7661;display:grid;place-items:center;align-content:center;color:#9fb6a3;font-size:11px;letter-spacing:.12em;text-align:center}
+.profile-photo small{font-size:10px;letter-spacing:0;margin-top:8px;color:#788f7d}
+.profile-copy h3{font-size:clamp(25px,3vw,42px);font-weight:500;margin:14px 0}
+.profile-copy>p{color:#b0bcb1;font-size:15px;max-width:650px}
+.profile-brands{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
+.profile-brands span{border:1px solid #ffffff2b;border-radius:999px;padding:8px 12px;color:#c4d0c6;font-size:11px;letter-spacing:.03em}
+@media(max-width:800px){.background-grid{grid-template-columns:1fr;gap:14px}.background-card{padding:27px;text-align:center}.profile-card{grid-template-columns:1fr;gap:25px;text-align:center}.profile-photo{width:min(230px,70vw);margin:auto}.profile-brands{justify-content:center}.background-intro p br{display:none}}
 .word-slot{width:10.7em;margin-inline:auto}
 .hero-bottom{justify-content:center;align-items:center;gap:28px;flex-direction:column;margin-top:48px;padding-top:0}
 .hero-index{display:none}
