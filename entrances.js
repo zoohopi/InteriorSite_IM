@@ -1,0 +1,170 @@
+// site/dist 의 섹션 등장 효과와 127 카운트업을 옮겨 왔습니다.
+(() => {
+  const clamp = n => Math.max(0, Math.min(1, n));
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  // Animate contents rather than section boxes, keeping layout geometry stable.
+  const entrances = [...document.querySelectorAll('.sec')].map(section => {
+    const content = document.createElement('div');
+    content.className = 'section-content';
+    while (section.firstChild) content.append(section.firstChild);
+    section.append(content);
+    return { section, content };
+  });
+  let queued = false;
+  function render() {
+    queued = false;
+    if (reduced.matches) return;
+    entrances.forEach(({ section, content }) => {
+      const top = section.getBoundingClientRect().top;
+      const eased = 1 - Math.pow(1 - clamp((innerHeight - top) / (innerHeight * 0.8)), 3);
+      content.style.setProperty('--entry-y', `${(1 - eased) * 90}px`);
+      content.style.setProperty('--entry-opacity', String(0.3 + eased * 0.7));
+    });
+  }
+  const queue = () => { if (!queued) { queued = true; requestAnimationFrame(render); } };
+  addEventListener('scroll', queue, { passive: true });
+  addEventListener('resize', queue);
+  render();
+
+  // YouTube: show the thumbnail first, load the player only on click.
+  document.querySelectorAll(".yt").forEach(btn => btn.addEventListener("click", () => {
+    const frame = document.createElement("iframe");
+    frame.src = `https://www.youtube-nocookie.com/embed/${btn.dataset.yt}?autoplay=1&rel=0&playsinline=1`;
+    frame.title = btn.getAttribute("aria-label");
+    frame.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+    frame.allowFullscreen = true;
+    const wrap = document.createElement("div");
+    wrap.className = "video-box yt-frame liquid-glass";
+    wrap.append(frame);
+    btn.replaceWith(wrap);
+  }));
+
+  // Review cards: arrows scroll by one card.
+  document.querySelectorAll(".reviews-slider").forEach(s => {
+    const track = s.querySelector(".rv-track");
+    const prev = s.querySelector(".rv-prev"), next = s.querySelector(".rv-next");
+    const update = () => {
+      const max = track.scrollWidth - track.clientWidth;
+      prev.disabled = track.scrollLeft <= 2;
+      next.disabled = max <= 2 || track.scrollLeft >= max - 2;
+    };
+    const step = dir => {
+      const cards = track.querySelectorAll(".rv-card");
+      if (cards.length < 2) return;
+      const w = cards[0].offsetWidth + parseFloat(getComputedStyle(track).columnGap || 0);
+      const smooth = reduced.matches ? "auto" : "smooth";
+      track.scrollBy({ left: dir * w, behavior: smooth });
+    };
+    prev.addEventListener("click", () => step(-1));
+    next.addEventListener("click", () => step(1));
+    track.addEventListener("scroll", update, { passive: true });
+    new ResizeObserver(update).observe(track);
+    new MutationObserver(update).observe(track, { childList: true });
+    update();
+  });
+
+  // Scrollbar width, so full-bleed blocks span the viewport without overflowing.
+  const sbw = () => document.documentElement.style.setProperty("--sbw", `${innerWidth - document.documentElement.clientWidth}px`);
+  sbw(); addEventListener("resize", sbw);
+
+  // Roadmap video: plays only after a click.
+  document.querySelectorAll(".rm-video").forEach(box => {
+    const v = box.querySelector("video"), btn = box.querySelector(".rm-play");
+    if (btn) btn.addEventListener("click", () => { v.controls = true; btn.hidden = true; v.play().catch(() => { btn.hidden = false; }); });
+  });
+
+  // Roadmap image pairs: switch every 2 seconds.
+  document.querySelectorAll(".rm-rotator").forEach(box => {
+    const imgs = [...box.querySelectorAll("img")];
+    if (imgs.length < 2 || reduced.matches) return;
+    let i = 0;
+    setInterval(() => { imgs[i].classList.remove("is-on"); i = (i + 1) % imgs.length; imgs[i].classList.add("is-on"); }, 2000);
+  });
+
+  // Count once when the figure enters the viewport.
+  const count = document.getElementById('career-count');
+  if (!count || reduced.matches) return;
+  const target = Number(count.textContent);
+  count.textContent = '0';
+  const observer = new IntersectionObserver(entries => {
+    if (!entries.some(e => e.isIntersecting)) return;
+    observer.disconnect();
+    const start = performance.now();
+    const tick = now => {
+      const p = clamp((now - start) / 1600);
+      count.textContent = String(Math.round(target * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, { threshold: 0.5 });
+  observer.observe(count);
+})();
+
+// 플랜 카드: 마우스가 없는 기기는 눌러서 앞·뒷면 전환
+if (matchMedia('(hover: none)').matches) {
+  document.querySelectorAll('.plan').forEach(card => card.addEventListener('click', () => card.classList.toggle('is-flipped')));
+}
+
+
+// 상단 메뉴: 공간 투어(남산장어 공간을 걷다) 구간에서만 숨기고 나머지 구간에서는 화면 위에 고정
+(() => {
+  const header = document.querySelector('.site-nav');
+  const journey = document.getElementById('journey');
+  if (!header || !journey) return;
+  let queued = false;
+  const update = () => {
+    queued = false;
+    const y = scrollY, top = journey.offsetTop, end = top + journey.offsetHeight - innerHeight;
+    header.classList.toggle('is-hidden', y >= top - 2 && y < end);
+    // 첫 히어로 화면에서는 영상이 보이도록 배경 없이, 히어로를 지나면 검정 배경
+    const hero = document.querySelector('.hero');
+    header.classList.toggle('is-solid', !hero || y > hero.offsetTop + hero.offsetHeight - header.offsetHeight);
+  };
+  const queue = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };
+  addEventListener('scroll', queue, { passive: true });
+  addEventListener('resize', queue);
+  update();
+})();
+
+// 매출 설계 카드 흐름: 휴대폰에서 손가락으로 누르고 있으면 멈추고, 떼면 다시 흐름
+(() => {
+  const track = document.querySelector('.points-track');
+  if (!track) return;
+  // 애니메이션을 직접 멈추고 다시 재생합니다(클래스만 바꾸는 방식은 일부 휴대폰에서 적용되지 않음).
+  const hold = on => {
+    track.classList.toggle('is-held', on);
+    const keep = !on && matchMedia('(hover: hover)').matches && track.matches(':hover'); // 마우스가 올라가 있으면 계속 멈춤
+    if (track.getAnimations) track.getAnimations().forEach(a => (on || keep) ? a.pause() : a.play());
+  };
+  // 터치: 손가락을 대면 멈추고, 떼거나 화면 스크롤로 터치가 끝나면 다시 흐름
+  track.addEventListener('touchstart', () => hold(true), { passive: true });
+  ['touchend', 'touchcancel'].forEach(t => track.addEventListener(t, () => hold(false), { passive: true }));
+  // 마우스: 누르고 있는 동안 멈춤(올려 두기만 해도 멈추는 것은 CSS :hover)
+  if (matchMedia('(hover: hover)').matches) { // 휴대폰은 터치 뒤 가짜 마우스 이벤트가 와서 마우스 처리는 PC에서만
+    track.addEventListener('mousedown', () => hold(true));
+    track.addEventListener('mouseup', () => hold(false));
+    track.addEventListener('mouseleave', () => { track.classList.remove('is-held'); if (track.getAnimations) track.getAnimations().forEach(a => a.play()); });
+    track.addEventListener('mouseenter', () => { if (track.getAnimations) track.getAnimations().forEach(a => a.pause()); });
+  }
+  track.addEventListener('contextmenu', event => event.preventDefault());
+})();
+
+// 진행 절차 영상(착공): 소리 없이 화면에 보이면 자동 재생, 벗어나면 정지
+document.querySelectorAll('video.rm-autoplay').forEach(v => {
+  v.muted = true;
+  new IntersectionObserver(([e]) => {
+    if (e.isIntersecting && !document.hidden) v.play().catch(() => {}); else v.pause();
+  }, { threshold: .4 }).observe(v);
+});
+
+// 상단 메뉴 링크: 섹션 등장 효과(아래에서 떠오르는 이동) 때문에 도착 후 내용이 메뉴 밑으로 밀려 올라가 가려졌습니다.
+// 이동 효과를 뺀 실제 위치를 계산해, 메뉴 바로 아래에 제목(PROCESS 등)이 보이도록 멈춥니다.
+document.querySelectorAll('.site-nav nav a[href^="#"]').forEach(link => link.addEventListener('click', event => {
+  const target = document.querySelector(link.getAttribute('href'));
+  if (!target) return;
+  event.preventDefault();
+  let top = 0;
+  for (let el = target; el; el = el.offsetParent) top += el.offsetTop;
+  const nav = document.querySelector('.site-nav');
+  scrollTo(0, Math.max(0, top - (nav ? nav.offsetHeight : 0) - 24));
+}));
